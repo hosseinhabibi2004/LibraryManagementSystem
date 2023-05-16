@@ -24,6 +24,15 @@ class Base:
         with databaseConfig.Session() as session:
             return session.query(cls).get(id)
 
+    def update(self, **kwargs):
+        if kwargs:
+            for key, value in kwargs.items():
+                if hasattr(self, key):
+                    setattr(self, key, value)
+        
+        with databaseConfig.Session() as session:
+            session.commit()
+
     def delete(self):
         if self:
             with databaseConfig.Session() as session:
