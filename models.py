@@ -95,6 +95,9 @@ class User(Base):
     def __repr__(self) -> str:
         return f"<user id=\"{self.id}\" email=\"{self.email}\" role=\"{self.role}\">"
 
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
 
 class Author(Base):
     __tablename__ = 'authors'
@@ -129,6 +132,9 @@ class Author(Base):
     def __repr__(self) -> str:
         return f"<Author id=\"{self.id}\" name=\"{self.first_name} {self.last_name}\">"
 
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
 
 class Publisher(Base):
     __tablename__ = 'publishers'
@@ -162,6 +168,9 @@ class Publisher(Base):
 
     def __repr__(self) -> str:
         return f"<Publisher id=\"{self.id}\" publisher_name=\"{self.publisher_name}\">"
+
+    def __str__(self) -> str:
+        return f"{self.publisher_name}, {self.city}"
 
 
 class Book(Base):
@@ -202,6 +211,9 @@ class Book(Base):
 
     def __repr__(self) -> str:
         return f"<Book id=\"{self.id}\" book_name=\"{self.book_name}\"" + ((" volume=\"" + str(self.volume) + "\"") if self.volume != None else "") + ">"
+
+    def __str__(self) -> str:
+        return self.book_name
 
 
 class Request(Base):
