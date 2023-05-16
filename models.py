@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, as_declarative, Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from config import databaseConfig
+from config import databaseConfig, userRoles
 from utils import hash_password
 from logger import LOGGER
 
@@ -52,7 +52,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
-    password = Column(String, default=hash_password(str(id)), nullable=False)
+    password = Column(String, nullable=False)
     role = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now())
     updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
@@ -61,17 +61,18 @@ class User(Base):
         return f"<user id=\"{self.id}\" email=\"{self.email}\" role=\"{self.role}\">"
 
     @classmethod
-    def create(cls, id: int, email: str, first_name: str, last_name: str, role: str):
+    def create(cls, id: int, email: str, first_name: str, last_name: str, role: str = userRoles.STUDENT) -> 'User':
         try:
             with databaseConfig.Session() as session:
                 existing_user = session.query(User).filter((User.id == id) & (User.email == email)).first()
                 if existing_user is None:
                     user = cls(
-                        id = id,
-                        email = email,
-                        first_name = first_name.capitalize(),
-                        last_name = last_name.capitalize(),
-                        role = role,
+                        id=id,
+                        email=email,
+                        first_name=first_name.title(),
+                        last_name=last_name.title(),
+                        password=hash_password(str(id)),
+                        role=role,
                     )
                     session.add(user)
                     session.commit()
