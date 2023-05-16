@@ -131,20 +131,20 @@ class Author(Base):
 class Publisher(Base):
     __tablename__ = 'publishers'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement="auto")
-    name = Column(String, nullable=False)
+    publisher_name = Column(String, nullable=False)
     city = Column(String, nullable=False)
 
     def __repr__(self):
         return f"<Publisher id=\"{self.id}\" name=\"{self.name}\">"
 
     @classmethod
-    def create(cls, session: Session, name: str, city: str):
+    def create(cls, publisher_name: str, city: str) -> 'Publisher':
         try:
             with databaseConfig.Session() as session:
-                existing_publisher = session.query(Publisher).filter((Publisher.name == name) & (Publisher.city == city)).first()
+                existing_publisher = session.query(Publisher).filter((Publisher.publisher_name == publisher_name) & (Publisher.city == city)).first()
                 if existing_publisher is None:
                     publisher = cls(
-                        name=name.title(),
+                        publisher_name=publisher_name.title(),
                         city=city.capitalize(),
                     )
                     session.add(publisher)
@@ -152,7 +152,7 @@ class Publisher(Base):
                     LOGGER.info(f"Created publisher: {publisher}")
                 else:
                     LOGGER.warning(f"Publishers already exists in database: {existing_publisher}")
-                return session.query(Publisher).filter((Publisher.name == name) & (Publisher.city == city)).first()
+                return session.query(Publisher).filter((Publisher.publisher_name == publisher_name) & (Publisher.city == city)).first()
         except IntegrityError as e:
             LOGGER.error(e.orig)
             raise e.orig
