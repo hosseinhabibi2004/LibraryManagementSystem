@@ -9,7 +9,7 @@ from sqlalchemy import (
     Boolean,
     ForeignKey,
 )
-from sqlalchemy.orm import relationship, as_declarative, Session
+from sqlalchemy.orm import relationship, as_declarative
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from config import databaseConfig, userRoles
@@ -29,7 +29,7 @@ class Base:
             for key, value in kwargs.items():
                 if hasattr(self, key):
                     setattr(self, key, value)
-        
+
         with databaseConfig.Session() as session:
             session.commit()
 
@@ -48,6 +48,7 @@ class Base:
 
 class User(Base):
     __tablename__ = 'users'
+
     id = Column(Integer, primary_key=True, nullable=False)
     email = Column(String, unique=True, nullable=False)
     first_name = Column(String, nullable=False)
@@ -56,9 +57,6 @@ class User(Base):
     role = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now())
     updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
-
-    def __repr__(self):
-        return f"<user id=\"{self.id}\" email=\"{self.email}\" role=\"{self.role}\">"
 
     @classmethod
     def create(cls, id: int, email: str, first_name: str, last_name: str, role: str = userRoles.STUDENT) -> 'User':
@@ -94,15 +92,16 @@ class User(Base):
             session.commit()
             return True
 
+    def __repr__(self) -> str:
+        return f"<user id=\"{self.id}\" email=\"{self.email}\" role=\"{self.role}\">"
+
 
 class Author(Base):
     __tablename__ = 'authors'
+
     id = Column(Integer, primary_key=True, nullable=False, autoincrement="auto")
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
-
-    def __repr__(self):
-        return f"<Author id=\"{self.id}\" name=\"{self.first_name} {self.last_name}\">"
 
     @classmethod
     def create(cls, first_name: str, last_name: str) -> 'Author':
@@ -127,15 +126,16 @@ class Author(Base):
             LOGGER.error(f"Unexpected error when creating author: {e}")
             raise e
 
+    def __repr__(self) -> str:
+        return f"<Author id=\"{self.id}\" name=\"{self.first_name} {self.last_name}\">"
+
 
 class Publisher(Base):
     __tablename__ = 'publishers'
+
     id = Column(Integer, primary_key=True, nullable=False, autoincrement="auto")
     publisher_name = Column(String, nullable=False)
     city = Column(String, nullable=False)
-
-    def __repr__(self):
-        return f"<Publisher id=\"{self.id}\" name=\"{self.name}\">"
 
     @classmethod
     def create(cls, publisher_name: str, city: str) -> 'Publisher':
@@ -160,12 +160,15 @@ class Publisher(Base):
             LOGGER.error(f"Unexpected error when creating publisher: {e}")
             raise e
 
+    def __repr__(self) -> str:
+        return f"<Publisher id=\"{self.id}\" publisher_name=\"{self.publisher_name}\">"
+
 
 class Book(Base):
     __tablename__ = 'books'
 
     id = Column(Integer, primary_key=True, nullable=False, autoincrement="auto")
-    name = Column(String, nullable=False)
+    book_name = Column(String, nullable=False)
     author_id = Column(Integer, ForeignKey("authors.id"), nullable=False)
     publisher_id = Column(Integer, ForeignKey("publishers.id"), nullable=False)
     publish_year = Column(Integer)
@@ -175,14 +178,11 @@ class Book(Base):
     author = relationship("Author")
     publisher = relationship("Publisher")
 
-    def __repr__(self):
-        return f"<Book id=\"{self.id}\" name=\"{self.name}\"" + ((" volume=\"" + str(self.volume) + "\"") if self.volume != None else "") + ">"
-
     @classmethod
-    def create(cls, name: str, author: Author, publisher: Publisher, publish_year: int = None, volume: int = None):
+    def create(cls, book_name: str, author: Author, publisher: Publisher, publish_year: int = None, volume: int = None) -> 'Book':
         try:
             book = cls(
-                name=name.title(),
+                book_name=book_name.title(),
                 author=author,
                 publisher=publisher,
                 publish_year=publish_year,
@@ -200,9 +200,13 @@ class Book(Base):
             LOGGER.error(f"Unexpected error when creating book: {e}")
             raise e
 
+    def __repr__(self) -> str:
+        return f"<Book id=\"{self.id}\" book_name=\"{self.book_name}\"" + ((" volume=\"" + str(self.volume) + "\"") if self.volume != None else "") + ">"
+
 
 class Request(Base):
     __tablename__ = 'requests'
+
     id = Column(Integer, primary_key=True, nullable=False, autoincrement="auto")
     book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -213,9 +217,6 @@ class Request(Base):
     # Relationships
     book = relationship("Book")
     user = relationship("User")
-
-    def __repr__(self):
-        return f"<Request id=\"{self.id}\" book=\"{self.book_id}\" user=\"{self.user_id}\">"
 
     @classmethod
     def create(cls, book: Book, user: User, receive_date: date):
@@ -236,6 +237,9 @@ class Request(Base):
         except SQLAlchemyError as e:
             LOGGER.error(f"Unexpected error when creating request: {e}")
             raise e
+
+    def __repr__(self) -> str:
+        return f"<Request id=\"{self.id}\" book=\"{self.book_id}\" user=\"{self.user_id}\">"
 
 
 if __name__ == '__main__':
