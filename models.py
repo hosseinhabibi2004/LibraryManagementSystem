@@ -31,7 +31,10 @@ class Base:
                     setattr(self, key, value)
 
         with databaseConfig.Session() as session:
+            session.merge(self)
             session.commit()
+
+        return self
 
     def delete(self):
         if self:

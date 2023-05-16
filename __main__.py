@@ -2,7 +2,8 @@ from prompt_toolkit.shortcuts import (
     button_dialog
 )
 
-from prompt import styles, sign_in, sign_up
+from prompt import styles, sign_in, sign_up, manager_menu
+from config import userRoles
 
 
 if __name__=='__main__':
@@ -27,3 +28,6 @@ if __name__=='__main__':
                 break
         else:
             break
+
+    if user.role == userRoles.MANAGER:
+        manager_menu()
