@@ -87,6 +87,13 @@ class User(Base):
             LOGGER.error(f"Unexpected error when creating user: {e}")
             raise e
 
+    def update_password(self, password: str) -> bool:
+        self.password = hash_password(password)
+        with databaseConfig.Session() as session:
+            session.add(self)
+            session.commit()
+            return True
+
 
 class Author(Base):
     __tablename__ = 'authors'
