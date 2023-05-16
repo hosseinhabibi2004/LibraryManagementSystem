@@ -105,21 +105,21 @@ class Author(Base):
         return f"<Author id=\"{self.id}\" name=\"{self.first_name} {self.last_name}\">"
 
     @classmethod
-    def create(cls, session: Session, first_name: str, last_name: str):
+    def create(cls, first_name: str, last_name: str) -> 'Author':
         try:
             with databaseConfig.Session() as session:
-                existing_author = session.query(Author).filter((Author.first_name == first_name) & (Author.last_name == last_name)).first()
+                existing_author = session.query(Author).filter((Author.first_name.lower() == first_name.lower()) & (Author.last_name.lower() == last_name.lower())).first()
                 if existing_author is None:
                     author = cls(
-                        first_name=first_name.capitalize(),
-                        last_name=last_name.capitalize(),
+                        first_name=first_name.title(),
+                        last_name=last_name.title(),
                     )
                     session.add(author)
                     session.commit()
                     LOGGER.info(f"Created author: {author}")
                 else:
                     LOGGER.warning(f"Author already exists in database: {existing_author}")
-                return session.query(Author).filter((Author.first_name == first_name) & (Author.last_name == last_name)).first()
+                return session.query(Author).filter((Author.first_name.lower() == first_name.lower()) & (Author.last_name.lower() == last_name.lower())).first()
         except IntegrityError as e:
             LOGGER.error(e.orig)
             raise e.orig
