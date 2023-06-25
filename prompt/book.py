@@ -1,3 +1,4 @@
+from datetime import date
 from prompt_toolkit.shortcuts import (
     message_dialog,
     yes_no_dialog,
@@ -260,13 +261,13 @@ def get_valid_publish_year():
         if not publish_year or publish_year.strip() == '':
             return None
         elif publish_year.isdigit() and len(publish_year)==4:
-            return int(publish_year)
-        else:
-            message_dialog(
-                title='Add Book | Error',
-                text='Please enter a valid year.',
-                style=styles.ERROR
-            ).run()
+            if 1900 <= int(publish_year) <= date.today().year:
+                return int(publish_year)
+        message_dialog(
+            title='Add Book | Error',
+            text='Please enter a valid year.',
+            style=styles.ERROR
+        ).run()
 
 
 def get_valid_volume():
