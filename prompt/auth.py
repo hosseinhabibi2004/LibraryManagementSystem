@@ -40,6 +40,14 @@ def sign_in() -> User:
         with databaseConfig.Session() as session:
             user = session.query(User).filter(User.email == email.lower()).first()
 
+        if not user:
+            message_dialog(
+                title='Sign In | Error',
+                text='User with that email not found.\nPlease try again.',
+                style=styles.ERROR
+            ).run()
+            continue
+
         while True:
             password = input_dialog(
                 title='Sign In',
@@ -85,10 +93,10 @@ def sign_up() -> User:
             title='Sign Up',
             text='Please enter your information:',
             values=[
-                ('student_id',  HTML('<style fg="#5DA7DB"><b>Student Identification Number'.ljust(53)   + (('</b></style> <style fg="#5DA7DB"><i>' + user_info["student_id"] + '</i></style>') if user_info["student_id"] != None else ('</b></style>')))),
-                ('email',       HTML('<style fg="#5DA7DB"><b>Email'.ljust(53)                           + (('</b></style> <style fg="#5DA7DB"><i>' + user_info["email"]      + '</i></style>') if user_info["email"]      != None else ('</b></style>')))),
-                ('first_name',  HTML('<style fg="#5DA7DB"><b>First Name'.ljust(53)                      + (('</b></style> <style fg="#5DA7DB"><i>' + user_info["first_name"] + '</i></style>') if user_info["first_name"] != None else ('</b></style>')))),
-                ('last_name',   HTML('<style fg="#5DA7DB"><b>Last Name'.ljust(53)                       + (('</b></style> <style fg="#5DA7DB"><i>' + user_info["last_name"]  + '</i></style>') if user_info["last_name"]  != None else ('</b></style>')))),
+                ('student_id',  HTML('<style fg="#5DA7DB"><b>Student Identification Number'.ljust(53)   + (('</b></style> <style fg="#5DA7DB"><i>' + str(user_info["student_id"]) + '</i></style>') if user_info["student_id"] != None else ('</b></style>')))),
+                ('email',       HTML('<style fg="#5DA7DB"><b>Email'.ljust(53)                           + (('</b></style> <style fg="#5DA7DB"><i>' + str(user_info["email"])      + '</i></style>') if user_info["email"]      != None else ('</b></style>')))),
+                ('first_name',  HTML('<style fg="#5DA7DB"><b>First Name'.ljust(53)                      + (('</b></style> <style fg="#5DA7DB"><i>' + str(user_info["first_name"]) + '</i></style>') if user_info["first_name"] != None else ('</b></style>')))),
+                ('last_name',   HTML('<style fg="#5DA7DB"><b>Last Name'.ljust(53)                       + (('</b></style> <style fg="#5DA7DB"><i>' + str(user_info["last_name"])  + '</i></style>') if user_info["last_name"]  != None else ('</b></style>')))),
                 ('done',        HTML('<style fg="#5DA7DB"><b>Done</b></style>'))
             ],
             default=default_option,
