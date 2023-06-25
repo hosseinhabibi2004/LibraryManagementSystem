@@ -10,7 +10,7 @@ import re
 
 from . import styles, book
 from models import User, Request
-from config import databaseConfig, userRoles
+from config import baseConfig, databaseConfig, userRoles
 from utils import check_password
 
 
@@ -161,7 +161,7 @@ def calculate_penalty(user_id):
         timedelta_diff = return_date - return_deadline
 
         if timedelta_diff.days > 0:
-            penalty = timedelta_diff.days * 10
+            penalty = timedelta_diff.days * baseConfig.PENALTY_RATE_PER_DAY
             total_penalty += penalty
 
     return total_penalty
