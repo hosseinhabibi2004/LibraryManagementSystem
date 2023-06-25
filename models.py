@@ -113,7 +113,7 @@ class Author(Base):
     def create(cls, first_name: str, last_name: str) -> 'Author':
         try:
             with databaseConfig.Session() as session:
-                existing_author = session.query(Author).filter((Author.first_name.lower() == first_name.lower()) & (Author.last_name.lower() == last_name.lower())).first()
+                existing_author = session.query(Author).filter((Author.first_name == first_name.title()) & (Author.last_name == last_name.title())).first()
                 if existing_author is None:
                     author = cls(
                         first_name=first_name.title(),
@@ -124,7 +124,7 @@ class Author(Base):
                     LOGGER.info(f"Created author: {author}")
                 else:
                     LOGGER.warning(f"Author already exists in database: {existing_author}")
-                return session.query(Author).filter((Author.first_name.lower() == first_name.lower()) & (Author.last_name.lower() == last_name.lower())).first()
+                return session.query(Author).filter((Author.first_name == first_name.title()) & (Author.last_name == last_name.title())).first()
         except IntegrityError as e:
             LOGGER.error(e.orig)
             raise e.orig
