@@ -6,7 +6,6 @@ from sqlalchemy import (
     String,
     DateTime,
     Date,
-    Boolean,
     ForeignKey,
 )
 from sqlalchemy.orm import relationship, as_declarative
@@ -186,6 +185,7 @@ class Book(Base):
 
     id = Column(Integer, primary_key=True, nullable=False, autoincrement="auto")
     book_name = Column(String, nullable=False)
+    isbn = Column(String(13), nullable=False)
     author_id = Column(Integer, ForeignKey("authors.id"), nullable=False)
     publisher_id = Column(Integer, ForeignKey("publishers.id"), nullable=False)
     publish_year = Column(Integer)
@@ -196,10 +196,11 @@ class Book(Base):
     publisher = relationship("Publisher")
 
     @classmethod
-    def create(cls, book_name: str, author: Author, publisher: Publisher, publish_year: int = None, volume: int = None) -> 'Book':
+    def create(cls, book_name: str, isbn: str, author: Author, publisher: Publisher, publish_year: int = None, volume: int = None) -> 'Book':
         try:
             book = cls(
                 book_name=book_name.title(),
+                isbn=isbn,
                 author=author,
                 publisher=publisher,
                 publish_year=publish_year,

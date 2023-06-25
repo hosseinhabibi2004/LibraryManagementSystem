@@ -12,20 +12,28 @@ from sqlalchemy.orm import joinedload
 from . import styles, author, publisher
 from config import baseConfig, databaseConfig
 from models import User, Book, Author, Publisher, Request
+from utils import check_isbn
 
 
 def search_books() -> Book:
     while True:
-        book_name = input_dialog(
+        search_input = input_dialog(
             title="Search Books",
-            text="Enter a book name:",
+            text="Enter book name or author name or ISBN:",
         ).run()
 
-        if not book_name:
+        if not search_input:
             return None
 
         with databaseConfig.Session() as session:
-            books = session.query(Book).options(joinedload(Book.author)).filter(Book.book_name.ilike(f'%{book_name}%')).all()
+            is_valid_isbn, isbn = check_isbn(search_input)
+            if is_valid_isbn:
+                books = session.query(Book).options(joinedload(Book.author)).filter(Book.isbn == isbn).all()
+            else:
+                books = session.query(Book).options(joinedload(Book.author)).filter(Book.book_name.ilike(f'%{search_input}%')).all()
+                authors = session.query(Author).filter((Author.first_name + ' ' + Author.last_name).ilike(f'%{search_input}%')).all()
+                for author in authors:
+                    books = session.query(Book).options(joinedload(Book.author)).filter(Book.author == author).all()
 
         if books:
             selected_book = radiolist_dialog(
@@ -52,6 +60,7 @@ def search_books() -> Book:
 def add_book() -> Book:
     book_info = {
         'book_name': None,
+        'isbn': None,
         'author': None,
         'publisher': None,
         'publish_year': None,
@@ -66,7 +75,7 @@ def add_book() -> Book:
             else:
                 default_option = 'done'
 
-        values = [(field_name, HTML('<style fg="#5DA7DB"><b>' + field_name.replace('_', ' ').title().ljust(len(max(book_info.keys(), key=len))) + (('</b></style> <style fg="#5DA7DB"><i>' + str(book_info[field_name]) + '</i></style>') if book_info[field_name] != None else ('</b></style>')))) for field_name in book_info]
+        values = [(field_name, HTML('<style fg="#5DA7DB"><b>' + field_name.replace('_', ' ').title().replace('Isbn', 'ISBN').ljust(len(max(book_info.keys(), key=len))) + (('</b></style> <style fg="#5DA7DB"><i>' + str(book_info[field_name]) + '</i></style>') if book_info[field_name] != None else ('</b></style>')))) for field_name in book_info]
         values.append(('done', HTML('<style fg="#5DA7DB"><b>Done</b></style>')))
 
         selected_option = radiolist_dialog(
@@ -79,6 +88,8 @@ def add_book() -> Book:
 
         if selected_option == 'book_name':
             book_info['book_name'] = get_valid_book_name()
+        elif selected_option == 'isbn':
+            book_info['isbn'] = get_valid_isbn()
         elif selected_option == 'author':
             author_selected = button_dialog(
                 title='Select Author',
@@ -118,9 +129,10 @@ def add_book() -> Book:
         elif selected_option == 'volume':
             book_info['volume'] = get_valid_volume()
         elif selected_option == 'done':
-            if None not in [book_info[field_name] for field_name in ['book_name', 'author', 'publisher']]:
+            if None not in [book_info[field_name] for field_name in ['book_name', 'isbn', 'author', 'publisher']]:
                 return Book.create(
                     book_name=book_info['book_name'],
+                    isbn=book_info['isbn'],
                     author=book_info['author'],
                     publisher=book_info['publisher'],
                     publish_year=book_info['publish_year'],
@@ -154,7 +166,7 @@ def update_book(book: Book) -> Book:
                 elif field_name == 'publisher_id':
                     field_name = 'publisher'
                     field_value = Publisher.get_by_id(book_info['publisher_id'])
-                values.append((field_name, HTML('<style fg="#5DA7DB"><b>' + field_name.replace('_', ' ').title().ljust(len(max(book_info.keys(), key=len))) + (('</b></style> <style fg="#5DA7DB"><i>' + str(field_value) + '</i></style>') if field_value != None else ('</b></style>'))), ))
+                values.append((field_name, HTML('<style fg="#5DA7DB"><b>' + field_name.replace('_', ' ').title().replace('Isbn', 'ISBN').ljust(len(max(book_info.keys(), key=len))) + (('</b></style> <style fg="#5DA7DB"><i>' + str(field_value) + '</i></style>') if field_value != None else ('</b></style>'))), ))
         values.append(('done', HTML('<style fg="#5DA7DB"><b>Done</b></style>'), ))
 
         selected_option = radiolist_dialog(
@@ -166,6 +178,8 @@ def update_book(book: Book) -> Book:
 
         if selected_option == 'book_name':
             book_info['book_name'] = get_valid_book_name()
+        elif selected_option == 'isbn':
+            book_info['isbn'] = get_valid_isbn()
         elif selected_option == 'author':
             author_selected = button_dialog(
                 title='Select Author',
@@ -205,7 +219,7 @@ def update_book(book: Book) -> Book:
         elif selected_option == 'volume':
             book_info['volume'] = get_valid_volume()
         elif selected_option == 'done':
-            if None not in [book_info[field_name] for field_name in ['book_name', 'author_id', 'publisher_id']]:
+            if None not in [book_info[field_name] for field_name in ['book_name', 'isbn', 'author_id', 'publisher_id']]:
                 return book.update(**book_info)
             else:
                 should_edit = yes_no_dialog(
@@ -345,6 +359,37 @@ def get_valid_book_name():
     if not book_name or book_name.strip() == '':
         return None
     return book_name.strip().title()
+
+
+def get_valid_isbn():
+    """
+    Prompt the user to enter a valid isbn.
+    """
+    isbn = input_dialog(
+        title='Add Book',
+        text='Please enter book\'s ISBN:',
+        style=styles.BLUE,
+    ).run()
+
+    if not isbn or isbn.strip() == '':
+        return None
+
+    is_valid_isbn, isbn = check_isbn(isbn)
+    if is_valid_isbn:
+        return isbn
+    else:
+        if isbn is None:
+            message_dialog(
+                title='Add Book | Error',
+                text='Please enter a valid ISBN format.',
+                style=styles.ERROR
+            ).run()
+        else:
+            message_dialog(
+                title='Add Book | Error',
+                text=f'Please enter a valid ISBN. did you mean ISBN is "{isbn}"?',
+                style=styles.ERROR
+            ).run()
 
 
 def get_valid_publish_year():

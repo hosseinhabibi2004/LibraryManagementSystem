@@ -44,7 +44,7 @@ def manager_menu(manager_id):
                             field_value = Publisher.get_by_id(selected_book_info['publisher_id'])
 
                         if field_value != None:
-                            text +=  f"<b>{field_name.replace('_', ' ').title().replace('Id', 'ID').ljust(len(max(selected_book_info.keys(), key=len)))}</b> : <i>{str(field_value).replace('_', ' ').title()}</i>\n"
+                            text +=  f"<b>{field_name.replace('_', ' ').title().replace('Id', 'ID').replace('Isbn', 'ISBN').ljust(len(max(selected_book_info.keys(), key=len)))}</b> : <i>{str(field_value).replace('_', ' ').title()}</i>\n"
                 text += '</style>'
 
                 search_book_selected_option = button_dialog(
