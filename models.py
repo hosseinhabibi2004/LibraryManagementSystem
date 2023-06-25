@@ -65,11 +65,11 @@ class User(Base):
     def create(cls, id: int, email: str, first_name: str, last_name: str, role: str = userRoles.STUDENT) -> 'User':
         try:
             with databaseConfig.Session() as session:
-                existing_user = session.query(User).filter((User.id == id) & (User.email == email)).first()
+                existing_user = session.query(User).filter((User.id == id) & (User.email == email.lower())).first()
                 if existing_user is None:
                     user = cls(
                         id=id,
-                        email=email,
+                        email=email.lower(),
                         first_name=first_name.title(),
                         last_name=last_name.title(),
                         password=hash_password(str(id)),

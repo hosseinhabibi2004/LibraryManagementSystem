@@ -38,7 +38,7 @@ def sign_in() -> User:
             continue
 
         with databaseConfig.Session() as session:
-            user = session.query(User).filter(User.email == email).first()
+            user = session.query(User).filter(User.email == email.lower()).first()
 
         while True:
             password = input_dialog(
