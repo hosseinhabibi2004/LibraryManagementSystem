@@ -11,6 +11,7 @@ load_dotenv()
 class baseConfig:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     DATABASE_URL = os.getenv('DATABASE_URL')
+    MAX_RESERVATIONS_LIMIT = int(os.getenv('MAX_RESERVATIONS_LIMIT'))
 
 
 class databaseConfig:

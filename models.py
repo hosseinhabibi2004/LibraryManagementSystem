@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from sqlalchemy import (
     inspect,
     Column,
@@ -59,7 +59,11 @@ class User(Base):
     password = Column(String, nullable=False)
     role = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now())
-    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
+    updated_at = Column(DateTime, onupdate=datetime.now())
+    updated_by_user_id = Column(Integer, ForeignKey("users.id"))
+
+    # Relationships
+    updated_by_user = relationship("User")
 
     @classmethod
     def create(cls, id: int, email: str, first_name: str, last_name: str, role: str = userRoles.STUDENT) -> 'User':
@@ -88,10 +92,11 @@ class User(Base):
             LOGGER.error(f"Unexpected error when creating user: {e}")
             raise e
 
-    def update_password(self, password: str) -> bool:
+    def update_password(self, password: str, updated_by_user_id: int) -> bool:
         self.password = hash_password(password)
+        self.updated_by_user_id = updated_by_user_id
         with databaseConfig.Session() as session:
-            session.add(self)
+            session.merge(self)
             session.commit()
             return True
 
@@ -212,6 +217,10 @@ class Book(Base):
             LOGGER.error(f"Unexpected error when creating book: {e}")
             raise e
 
+    def is_reserved(self) -> bool:
+        with databaseConfig.Session() as session:
+            return session.query(Request).filter(Request.book_id == self.id, Request.return_date == None).count() > 0
+
     def __repr__(self) -> str:
         return f"<Book id=\"{self.id}\" book_name=\"{self.book_name}\"" + ((" volume=\"" + str(self.volume) + "\"") if self.volume != None else "") + ">"
 
@@ -225,22 +234,18 @@ class Request(Base):
     id = Column(Integer, primary_key=True, nullable=False, autoincrement="auto")
     book_id = Column(Integer, ForeignKey("books.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    delivery_date = Column(Date, default=date.today())
-    receive_date = Column(Date)
-    status = Column(Boolean, default=False)
+    delivery_date = Column(Date, default=date.today(), nullable=False)
+    return_deadline = Column(Date, default=date.today() + timedelta(days=14), nullable=False)
+    return_date = Column(Date, nullable=True)
 
     # Relationships
     book = relationship("Book")
     user = relationship("User")
 
     @classmethod
-    def create(cls, book: Book, user: User, receive_date: date):
+    def create(cls, book: Book, user: User) -> 'Request':
         try:
-            request = cls(
-                book=book,
-                user=user,
-                receive_date=receive_date,
-            )
+            request = cls(book=book, user=user)
             with databaseConfig.Session() as session:
                 session.add(request)
                 session.commit()

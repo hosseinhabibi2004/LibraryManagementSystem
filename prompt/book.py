@@ -10,8 +10,8 @@ from prompt_toolkit.formatted_text import HTML
 from sqlalchemy.orm import joinedload
 
 from . import styles, author, publisher
-from config import databaseConfig
-from models import Book, Author, Publisher
+from config import baseConfig, databaseConfig
+from models import User, Book, Author, Publisher, Request
 
 
 def search_books() -> Book:
@@ -231,6 +231,105 @@ def delete_book(book: Book) -> bool:
     if delete_book_yes_no:
         return book.delete()
     return False
+
+
+def reserve_book(user_id: int) -> Request:
+    with databaseConfig.Session() as session:
+        current_user_reservations = session.query(Request).filter(Request.return_date == None).filter(Request.user_id == user_id).count()
+
+    if current_user_reservations >= baseConfig.MAX_RESERVATIONS_LIMIT:
+        message_dialog(
+            title="Reserve Book",
+            text=f"You have already reached the maximum limit of {baseConfig.MAX_RESERVATIONS_LIMIT} reservations.",
+            style=styles.ERROR,
+        ).run()
+        return
+
+    selected_book = search_books()
+    if selected_book:
+        with databaseConfig.Session() as session:
+            is_reserved = selected_book.is_reserved()
+            if is_reserved:
+                message_dialog(
+                    title="Reserve Book",
+                    text="The selected book is already reserved.",
+                    style=styles.ERROR,
+                ).run()
+                return
+
+            request = Request.create(book=selected_book, user=User.get_by_id(user_id))
+            if request:
+                message_dialog(
+                    title="Reserve Book",
+                    text="Book reserved successfully.",
+                    style=styles.SUCCESS,
+                ).run()
+                return request
+    else:
+        message_dialog(
+            title="Reserve Book",
+            text="No available books found.",
+            style=styles.ERROR,
+        ).run()
+
+
+def return_book(request_id):
+    with databaseConfig.Session() as session:
+        request = (
+            session.query(Request)
+            .filter(Request.id == request_id)
+            .options(joinedload(Request.book))
+            .one()
+        )
+
+    book_name = request.book.book_name if request.book else "Unknown Book"
+    confirmation = yes_no_dialog(
+        title="Return Book",
+        text=f"Are you sure you want to return the book '{book_name}'?",
+        style=styles.BLUE,
+    ).run()
+
+    if not confirmation:
+        return
+
+    request.update(return_date=date.today())
+
+    message_dialog(
+        title="Return Book",
+        text="Book returned successfully.",
+        style=styles.SUCCESS,
+    ).run()
+
+
+def show_reserved_books(user_id):
+    with databaseConfig.Session() as session:
+        unreturned_books = (
+            session.query(Request)
+            .filter(Request.user_id == user_id)
+            .filter(Request.return_date == None)
+            .options(joinedload(Request.book))
+            .all()
+        )
+
+    if not unreturned_books:
+        message_dialog(
+            title="Reserved Books",
+            text="You have no reserved books.",
+            style=styles.ERROR,
+        ).run()
+        return
+
+    selected_book = radiolist_dialog(
+        title="Reserved Books",
+        text="Select a book to return:",
+        values=[(str(request.id), request.book.book_name) for request in unreturned_books if request.book],
+        style=styles.BLUE,
+    ).run()
+
+    if not selected_book:
+        return
+
+    return return_book(int(selected_book))
 
 
 def get_valid_book_name():
